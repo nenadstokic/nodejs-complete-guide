@@ -1,1 +1,3 @@
-http://nenadstokic.com/samples/img/image004.jpg   ima 5 slika
+http://nenadstokic.com/samples/img/image001.jpg
+
+ima slika od broja 1 do 5
