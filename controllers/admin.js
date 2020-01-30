@@ -81,6 +81,8 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
   Product.find()
+    //.select('title price -_id') // we're getting products title, price, not _id
+    //.populate('userId', 'name') // we want to get name from user userId in Product
     .then(products => {
       res.render('admin/products', {
         prods: products,
