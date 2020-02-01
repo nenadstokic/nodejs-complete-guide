@@ -51,4 +51,3 @@ mongoose.connect('mongodb+srv://nenad:DicaBoga_2020_mongo@cluster0-dlyqr.mongodb
     app.listen(3000);
   })
   .catch(err => console.log(err));
- /* ljubav */
