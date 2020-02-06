@@ -2,7 +2,6 @@ const path = require("path");
 
 const express = require("express");
 const bodyParser = require("body-parser");
-
 const mongoose = require("mongoose");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
@@ -44,11 +43,7 @@ app.use((req, res, next) => {
   User.findById(req.session.user._id)
     .then(user => {
       req.user = user;
-      req.session.isLoggedIn = true;
       next();
-      /* req.session.isLoggedIn = true;
-      req.session.user = user;
-      res.redirect("/"); */
     })
     .catch(err => console.log(err));
 });
@@ -60,20 +55,10 @@ app.use(authRoutes);
 app.use(errorController.get404);
 
 mongoose
-  .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(MONGODB_URI)
   .then(result => {
-    User.findOne().then(user => {
-      if (!user) {
-        const user = new User({
-          name: "Nenad",
-          email: "nstokic@gmail.com",
-          cart: {
-            items: []
-          }
-        });
-        user.save();
-      }
-    });
     app.listen(3000);
   })
-  .catch(err => console.log(err));
+  .catch(err => {
+    console.log(err);
+  });
