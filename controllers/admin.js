@@ -62,7 +62,7 @@ exports.postEditProduct = (req, res, next) => {
 
   Product.findById(prodId)
     .then(product => {
-      // prevent deletion of another user's products
+      //prevent deletion of another user's products
       if (product.userId.toString() !== req.user._id.toString()) {
         return res.redirect("/");
       }
