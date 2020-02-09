@@ -9,9 +9,9 @@ const csrf = require("csurf");
 const flash = require("connect-flash");
 const errorController = require("./controllers/error");
 const User = require("./models/user");
+require("dotenv").config();
 
-const MONGODB_URI =
-  "mongodb+srv://nenad:DicaBoga_2020_mongo@cluster0-dlyqr.mongodb.net/shop?retryWrites=true&w=majority";
+const MONGODB_URI = process.env.MONGODB_SHOP_STRING;
 
 const app = express();
 const store = new MongoDBStore({
