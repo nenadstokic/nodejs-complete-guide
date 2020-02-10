@@ -3,6 +3,8 @@ const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const sendgridTransport = require("nodemailer-sendgrid-transport");
+const { validationResult } = require("express-validator/check");
+
 require("dotenv").config();
 
 const transporter = nodemailer.createTransport(
@@ -32,15 +34,20 @@ exports.getSignup = (req, res, next) => {
 exports.postLogin = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
+  const errors = validationResult(req);
 
-  User.findOne({ email: email })
-    .then(user => {
-      if (!user) {
-        // Set a flash message by passing the key, followed by the value, to req.flash().
-        req.flash("error", "Invalid email or password.");
-        return res.redirect("/login");
-      }
-      bcrypt
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    // status 422 = validation failed
+    return res.status(422).render("auth/login", {
+      path: "/login",
+      pageTitle: "Login",
+      errorMessage: errors.array()[0].msg
+    });
+  }
+  return User.findOne({ email: email }).then(user => {
+    if (user) {
+      return bcrypt
         .compare(password, user.password)
         .then(doMatch => {
           if (doMatch) {
@@ -51,59 +58,86 @@ exports.postLogin = (req, res, next) => {
               res.redirect("/");
             });
           }
-          req.flash("error", "Invalid email or password.");
+          req.flash("error", "Invalid password.");
+          console.log("passwords dont match");
+
           // password don't match
-          res.redirect("/login");
+          return res.redirect("/login");
         })
         .catch(err => {
           console.log(err);
-
           res.redirect("/login");
         });
+    } else {
+      console.log("no user with that email");
+
+      req.flash("error", "No user with that email.");
+      // password don't match
+      res.redirect("/login");
+    }
+  });
+
+  /*
+  return bcrypt
+    .compare(password, user.password)
+    .then(doMatch => {
+      if (doMatch) {
+        req.session.isLoggedIn = true;
+        req.session.user = user;
+        return req.session.save(err => {
+          console.log(err);
+          res.redirect("/");
+        });
+      }
+      req.flash("error", "Invalid email or password.");
+      // password don't match
+      res.redirect("/login");
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      console.log(err);
+      res.redirect("/login");
+    });
+    */
 };
 
 exports.postSignup = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
-  const confirmPassword = req.body.confirmPassword;
+  const errors = validationResult(req);
 
-  User.findOne({ email: email })
-    .then(userDoc => {
-      if (userDoc) {
-        req.flash(
-          "error",
-          "E-mail already exists, please pick a different one."
-        );
-        return res.redirect("/signup");
-      }
-      return bcrypt
-        .hash(password, 12)
-        .then(hashedPassword => {
-          const user = new User({
-            email: email,
-            password: hashedPassword,
-            cart: { items: [] }
-          });
-          return user.save();
-        })
-        .then(result => {
-          // user successfuly created
-          res.redirect("/login");
-          return transporter.sendMail({
-            to: email,
-            from: "shop@node-complete.com",
-            subject: "Signup successful",
-            html: "<h1>You successfully signed up!</h1>"
-          });
-          // we return a function so we can catch potential errors
-        })
-        .catch(err => {
-          console.log(err);
-        });
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    // status 422 = validation failed
+    return res.status(422).render("auth/signup", {
+      path: "/signup",
+      pageTitle: "Signup",
+      errorMessage: errors.array()[0].msg
+    });
+  }
+  bcrypt
+    .hash(password, 12)
+    .then(hashedPassword => {
+      const user = new User({
+        email: email,
+        password: hashedPassword,
+        cart: { items: [] }
+      });
+      return user.save();
     })
-    .catch(err => console.log(err));
+    .then(result => {
+      // user successfuly created
+      res.redirect("/login");
+      return transporter.sendMail({
+        to: email,
+        from: "shop@node-complete.com",
+        subject: "Signup successful",
+        html: "<h1>You successfully signed up!</h1>"
+      });
+      // we return a function so we can catch potential errors
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 exports.postLogout = (req, res, next) => {
