@@ -14,7 +14,14 @@ router.post(
   [
     check("email")
       .isEmail()
-      .withMessage("Please enter a valid email."),
+      .withMessage("Please enter a valid email.")
+      .custom((value, { req }) => {
+        return User.findOne({ email: value }).then(userDoc => {
+          if (!userDoc) {
+            return Promise.reject("There is no user with that email adress.");
+          }
+        });
+      }),
     body(
       "password",
       "Password must be at least 5 characters, numbers and letters"

@@ -19,7 +19,13 @@ exports.getLogin = (req, res, next) => {
   res.render("auth/login", {
     path: "/login",
     pageTitle: "Login",
-    errorMessage: req.flash("error")
+    errorMessage: req.flash("error"),
+    oldInput: {
+      email: "",
+      password: "",
+      confirmPassword: ""
+    },
+    validationErrors: []
   });
 };
 
@@ -27,7 +33,13 @@ exports.getSignup = (req, res, next) => {
   res.render("auth/signup", {
     path: "/signup",
     pageTitle: "Signup",
-    errorMessage: req.flash("error")
+    errorMessage: req.flash("error"),
+    oldInput: {
+      email: "",
+      password: "",
+      confirmPassword: ""
+    },
+    validationErrors: []
   });
 };
 
@@ -37,19 +49,18 @@ exports.postLogin = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    console.log("errors array " + errors.array());
-    // status 422 = validation failed
     return res.status(422).render("auth/login", {
       path: "/login",
       pageTitle: "Login",
-      errorMessage: errors.array()[0].msg
+      errorMessage: errors.array()[0].msg,
+      oldInput: {
+        email: email,
+        password: password
+      },
+      validationErrors: errors.array()
     });
   }
   User.findOne({ email: email }).then(user => {
-    if (!user) {
-      req.flash("error", "No user with that email.");
-      return res.redirect("/login");
-    }
     bcrypt
       .compare(password, user.password)
       .then(doMatch => {
@@ -61,37 +72,22 @@ exports.postLogin = (req, res, next) => {
             res.redirect("/");
           });
         }
-        req.flash("error", "Invalid password.");
-        console.log("Invalid password");
-        return res.redirect("/login"); // ovded mozda ne treba return
+        return res.status(422).render("auth/login", {
+          path: "/login",
+          pageTitle: "Login",
+          errorMessage: "Invalid password.",
+          oldInput: {
+            email: email,
+            password: password
+          },
+          validationErrors: [{ param: "password" }]
+        });
       })
       .catch(err => {
         console.log(err);
         res.redirect("/login");
       });
   });
-
-  /*
-  return bcrypt
-    .compare(password, user.password)
-    .then(doMatch => {
-      if (doMatch) {
-        req.session.isLoggedIn = true;
-        req.session.user = user;
-        return req.session.save(err => {
-          console.log(err);
-          res.redirect("/");
-        });
-      }
-      req.flash("error", "Invalid email or password.");
-      // password don't match
-      res.redirect("/login");
-    })
-    .catch(err => {
-      console.log(err);
-      res.redirect("/login");
-    });
-    */
 };
 
 exports.postSignup = (req, res, next) => {
@@ -101,11 +97,16 @@ exports.postSignup = (req, res, next) => {
 
   if (!errors.isEmpty()) {
     console.log(errors.array());
-    // status 422 = validation failed
     return res.status(422).render("auth/signup", {
       path: "/signup",
       pageTitle: "Signup",
-      errorMessage: errors.array()[0].msg
+      errorMessage: errors.array()[0].msg,
+      oldInput: {
+        email: email,
+        password: password,
+        confirmPassword: req.body.confirmPassword
+      },
+      validationErrors: errors.array()
     });
   }
   bcrypt
