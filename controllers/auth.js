@@ -37,7 +37,7 @@ exports.postLogin = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    console.log(errors.array());
+    console.log("errors array " + errors.array());
     // status 422 = validation failed
     return res.status(422).render("auth/login", {
       path: "/login",
@@ -45,36 +45,30 @@ exports.postLogin = (req, res, next) => {
       errorMessage: errors.array()[0].msg
     });
   }
-  return User.findOne({ email: email }).then(user => {
-    if (user) {
-      return bcrypt
-        .compare(password, user.password)
-        .then(doMatch => {
-          if (doMatch) {
-            req.session.isLoggedIn = true;
-            req.session.user = user;
-            return req.session.save(err => {
-              console.log(err);
-              res.redirect("/");
-            });
-          }
-          req.flash("error", "Invalid password.");
-          console.log("passwords dont match");
-
-          // password don't match
-          return res.redirect("/login");
-        })
-        .catch(err => {
-          console.log(err);
-          res.redirect("/login");
-        });
-    } else {
-      console.log("no user with that email");
-
+  User.findOne({ email: email }).then(user => {
+    if (!user) {
       req.flash("error", "No user with that email.");
-      // password don't match
-      res.redirect("/login");
+      return res.redirect("/login");
     }
+    bcrypt
+      .compare(password, user.password)
+      .then(doMatch => {
+        if (doMatch) {
+          req.session.isLoggedIn = true;
+          req.session.user = user;
+          return req.session.save(err => {
+            console.log(err);
+            res.redirect("/");
+          });
+        }
+        req.flash("error", "Invalid password.");
+        console.log("Invalid password");
+        return res.redirect("/login"); // ovded mozda ne treba return
+      })
+      .catch(err => {
+        console.log(err);
+        res.redirect("/login");
+      });
   });
 
   /*
