@@ -19,7 +19,7 @@ router.post(
   "/add-product",
   [
     body("title")
-      .isAlphanumeric()
+      .isString()
       .isLength({ min: 3 })
       .trim(),
     body("imageUrl").isURL(),
@@ -32,11 +32,13 @@ router.post(
   adminController.postAddProduct
 );
 
-router.get(
-  "/edit-product/:productId",
+router.get("/edit-product/:productId", isAuth, adminController.getEditProduct);
+
+router.post(
+  "/edit-product",
   [
     body("title")
-      .isAlphanumeric()
+      .isString()
       .isLength({ min: 3 })
       .trim(),
     body("imageUrl").isURL(),
@@ -46,10 +48,8 @@ router.get(
       .trim()
   ],
   isAuth,
-  adminController.getEditProduct
+  adminController.postEditProduct
 );
-
-router.post("/edit-product", isAuth, adminController.postEditProduct);
 
 router.post("/delete-product", isAuth, adminController.postDeleteProduct);
 
